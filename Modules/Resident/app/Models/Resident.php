@@ -17,9 +17,22 @@ class Resident extends Model
      */
     protected $fillable = [
         'name',
-        'email',
-        'phone',
+        'id_card_photo',
+        'phone_number',
+        'is_married',
+        'is_permanent',
     ];
+
+    protected $appends = ['id_card_photo_url'];
+
+    function getIdCardPhotoURL() : ?string
+    {
+        if (!$this->id_card_photo) {
+            return asset('images/default-id-card-photo.png');
+        }
+        
+        return null;
+    }
 
     public function occupancyHistories()
     {
