@@ -4,6 +4,7 @@ namespace Modules\Resident\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Modules\Resident\Models\Resident;
@@ -15,46 +16,55 @@ class ResidentController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Resident::query();
+        try {
+            $query = Resident::query();
 
-        // 1. Fitur Pencarian (berdasarkan Nama Lengkap atau Nomor Telepon)
-        if ($request->filled('search')) {
-            $search = $request->get('search');
-            $query->where(function ($q) use ($search) {
-                $q->where('nama_lengkap', 'like', "%{$search}%")
-                  ->orWhere('nomor_telepon', 'like', "%{$search}%");
-            });
+            // 1. Fitur Pencarian (berdasarkan Nama Lengkap atau Nomor Telepon)
+            if ($request->filled('search')) {
+                $search = $request->get('search');
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('phone_number', 'like', "%{$search}%");
+                });
+            }
+
+            // 2. Fitur Filter berdasarkan Status Penghuni (tetap / kontrak)
+            if ($request->filled('is_permanent')) {
+                $query->where('is_permanent', $request->get('is_permanent'));
+            }
+
+            // 3. Fitur Filter berdasarkan Status Pernikahan (sudah / belum)
+            if ($request->filled('is_married')) {
+                $query->where('is_married', $request->get('is_married'));
+            }
+
+            // 4. Ambil konfigurasi jumlah data per halaman (default: 10 data)
+            $perPage = $request->get('per_page', 10);
+
+            // Eksekusi query dengan pagination terurut dari yang terbaru
+            $residents = $query->latest()->paginate($perPage);
+
+            // Bungkus response dengan format standard API agar mudah dikonsumsi React
+            return response()->json([
+                'success' => true,
+                'message' => 'Daftar penghuni berhasil diambil.',
+                'data' => $residents->items(), // Mengambil list datanya saja
+                'meta' => [
+                    'current_page' => $residents->currentPage(),
+                    'last_page'    => $residents->lastPage(),
+                    'per_page'     => $residents->perPage(),
+                    'total'        => $residents->total(),
+                    'has_more'     => $residents->hasMorePages()
+                ]
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Error mengambil daftar penghuni: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil daftar penghuni: ' . $e->getMessage(),
+            ], 500);
         }
-
-        // 2. Fitur Filter berdasarkan Status Penghuni (tetap / kontrak)
-        if ($request->filled('status_penghuni')) {
-            $query->where('status_penghuni', $request->get('status_penghuni'));
-        }
-
-        // 3. Fitur Filter berdasarkan Status Pernikahan (sudah / belum)
-        if ($request->filled('status_menikah')) {
-            $query->where('status_menikah', $request->get('status_menikah'));
-        }
-
-        // 4. Ambil konfigurasi jumlah data per halaman (default: 10 data)
-        $perPage = $request->get('per_page', 10);
-
-        // Eksekusi query dengan pagination terurut dari yang terbaru
-        $residents = $query->latest()->paginate($perPage);
-
-        // Bungkus response dengan format standard API agar mudah dikonsumsi React
-        return response()->json([
-            'success' => true,
-            'message' => 'Daftar penghuni berhasil diambil.',
-            'data' => $residents->items(), // Mengambil list datanya saja
-            'meta' => [
-                'current_page' => $residents->currentPage(),
-                'last_page'    => $residents->lastPage(),
-                'per_page'     => $residents->perPage(),
-                'total'        => $residents->total(),
-                'has_more'     => $residents->hasMorePages()
-            ]
-        ], 200);
     }
 
     /**
@@ -77,6 +87,8 @@ class ResidentController extends Controller
             'is_married' => 'required|boolean',
             'is_permanent' => 'required|boolean',
         ]);
+
+        DB::beginTransaction();
         try {
             $path = null;
             if ($request->hasFile('id_card_photo')) {
@@ -92,12 +104,14 @@ class ResidentController extends Controller
             ]);
             $resident->save();
 
+            DB::commit();
             return response()->json([
                 'success' => true,
                 'message' => 'Data penghuni berhasil disimpan.',
                 'data' => $resident
             ], 201);
         } catch (\Exception $e) {
+            DB::rollBack();
             Log::error('Error menyimpan data penghuni: ' . $e->getMessage());
 
             return response()->json([
@@ -105,12 +119,14 @@ class ResidentController extends Controller
                 'message' => 'Gagal menyimpan data penghuni: ' . $e->getMessage(),
             ], 500);
         } catch (\Illuminate\Validation\ValidationException $ve) {
+            DB::rollBack();
             return response()->json([
                 'success' => false,
                 'message' => 'Validasi data gagal.',
                 'errors' => $ve->errors()
             ], 422);
         } catch (\Illuminate\Http\Exceptions\PostTooLargeException $pte) {
+            DB::rollBack();
             return response()->json([
                 'success' => false,
                 'message' => 'Ukuran file terlalu besar. Maksimal 2MB.',
@@ -167,6 +183,7 @@ class ResidentController extends Controller
             'is_permanent' => 'required|boolean',
         ]);
 
+        DB::beginTransaction();
         try {
             $data = $request->only(['name', 'phone_number', 'is_married', 'is_permanent']);
 
@@ -183,6 +200,7 @@ class ResidentController extends Controller
 
             $resident->update($data);
 
+            DB::commit();
             return response()->json([
                 'success' => true,
                 'message' => 'Data penghuni berhasil diperbarui.',
@@ -191,17 +209,20 @@ class ResidentController extends Controller
         } catch (\Exception $e) {
             Log::error('Error memperbarui data penghuni: ' . $e->getMessage());
 
+            DB::rollBack();
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal memperbarui data penghuni: ' . $e->getMessage(),
             ], 500);
         } catch (\Illuminate\Validation\ValidationException $ve) {
+            DB::rollBack();
             return response()->json([
                 'success' => false,
                 'message' => 'Validasi data gagal.',
                 'errors' => $ve->errors()
             ], 422);
         } catch (\Illuminate\Http\Exceptions\PostTooLargeException $pte) {
+            DB::rollBack();
             return response()->json([
                 'success' => false,
                 'message' => 'Ukuran file terlalu besar. Maksimal 2MB.',
@@ -214,6 +235,7 @@ class ResidentController extends Controller
      */
     public function destroy($id) 
     {
+        DB::beginTransaction();
         try {
             $resident = Resident::findOrFail($id);
 
@@ -223,18 +245,21 @@ class ResidentController extends Controller
 
             $resident->delete();
 
+            DB::commit();
             return response()->json([
                 'success' => true,
                 'message' => 'Data penghuni berhasil dihapus.',
             ], 200);
         } catch (\Exception $e) {
             Log::error('Error menghapus data penghuni: ' . $e->getMessage());
+            DB::rollBack();
 
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal menghapus data penghuni: ' . $e->getMessage(),
             ], 500);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $mnfe) {
+            DB::rollBack();
             return response()->json([
                 'success' => false,
                 'message' => 'Data penghuni tidak ditemukan.',
