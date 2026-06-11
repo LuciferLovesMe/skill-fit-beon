@@ -17,7 +17,7 @@ class HouseController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = House::query()->with('occupancyHistories.resident');
+            $query = House::query()->with('occupancyHistories.resident', 'currentOccupant.resident');
             if ($request->filled('search')) {
                 $search = $request->get('search');
                 $query->where('name', 'like', "%{$search}%");
