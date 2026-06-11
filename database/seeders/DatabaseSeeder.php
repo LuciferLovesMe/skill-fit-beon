@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Modules\Resident\Database\Seeders\ResidentSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -18,12 +19,15 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
-        User::updateOrCreate(
-            ['email' => 'admin@rt.com'], // Patokan agar tidak ganda
-            [
-                'name' => 'Bapak RT',
-                'password' => Hash::make('password123'), // Password default
-            ]
-        );
+        // User::updateOrCreate(
+        //     ['email' => 'admin@rt.com'], // Patokan agar tidak ganda
+        //     [
+        //         'name' => 'Bapak RT',
+        //         'password' => Hash::make('password123'), // Password default
+        //     ]
+        // );
+        $this->call([
+            ResidentSeeder::class,
+        ]);
     }
 }

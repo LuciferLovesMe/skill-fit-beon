@@ -25,13 +25,13 @@ class Resident extends Model
 
     protected $appends = ['id_card_photo_url'];
 
-    function getIdCardPhotoURL() : ?string
+    function getIdCardPhotoUrlAttribute() : ?string
     {
         if (!$this->id_card_photo) {
             return asset('images/default-id-card-photo.png');
         }
         
-        return null;
+        return asset('images/' . $this->id_card_photo);
     }
 
     public function occupancyHistories()
