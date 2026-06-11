@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Modules\Finance\Database\Seeders\FinanceSeeder;
 use Modules\House\Database\Seeders\HouseSeeder;
 use Modules\Resident\Database\Seeders\ResidentSeeder;
 
@@ -29,7 +30,8 @@ class DatabaseSeeder extends Seeder
         // );
         $this->call([
             // ResidentSeeder::class,
-            HouseSeeder::class,
+            // HouseSeeder::class,
+            FinanceSeeder::class,
         ]);
     }
 }

@@ -257,7 +257,7 @@ class HouseController extends Controller
                 ]);
             }
 
-            OccupancyHistory::crete([
+            OccupancyHistory::create([
                 'house_id' => $id,
                 'resident_id' => $residentId,
                 'start_date' => $startDate,
