@@ -13,7 +13,11 @@ class Expense extends Model
     /**
      * The attributes that are mass assignable.
      */
-    protected $fillable = [];
+    protected $fillable = [
+        'description',
+        'amount',
+        'expense_date'
+    ];
 
     // protected static function newFactory(): ExpenseFactory
     // {

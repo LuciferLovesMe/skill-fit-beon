@@ -14,7 +14,7 @@ Route::middleware(['auth:sanctum'])->prefix('v1')->group(function () {
     // ==========================================
     Route::prefix('payments')->group(function () {
         Route::get('/', [PaymentController::class, 'index']); // Ambil daftar pembayaran
-        Route::post('/pay', [PaymentController::class, 'pay']); // Proses bayar iuran (bisa bulk/tahunan)
+        Route::post('/pay', [PaymentController::class, 'store']); // Proses bayar iuran (bisa bulk/tahunan)
         Route::delete('/{id}', [PaymentController::class, 'destroy']); // Batalkan transaksi
     });
 

@@ -83,8 +83,8 @@ class PaymentController extends Controller
             $startMonth = $request->get('start_month');
             $durationMonths = $request->get('duration_months');
 
-            $house = House::with('currentOccupancy.resident')->findOrFail($houseId);
-            $resident = $house->currentOccupancy?->resident;
+            $house = House::with('currentOccupant.resident')->findOrFail($houseId);
+            $resident = $house->currentOccupant?->resident;
 
             if (!$resident) {
                 return response()->json([
@@ -95,7 +95,7 @@ class PaymentController extends Controller
 
             $feePerMonth = $feeType === 'cleaning' ? 100000 : 150000;
 
-            if ($feeType === 'security') {
+            if ($feeType === 'security' && $durationMonths > 1) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Iuran keamanan harus dibayarkan per bulan.',
