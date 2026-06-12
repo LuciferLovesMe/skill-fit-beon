@@ -21,16 +21,16 @@ class DatabaseSeeder extends Seeder
     {
         // User::factory(10)->create();
 
-        // User::updateOrCreate(
-        //     ['email' => 'admin@rt.com'], // Patokan agar tidak ganda
-        //     [
-        //         'name' => 'Bapak RT',
-        //         'password' => Hash::make('password123'), // Password default
-        //     ]
-        // );
+        User::updateOrCreate(
+            ['email' => 'admin@rt.com'], // Patokan agar tidak ganda
+            [
+                'name' => 'Bapak RT',
+                'password' => Hash::make('password123'), // Password default
+         ]
+        );
         $this->call([
-            // ResidentSeeder::class,
-            // HouseSeeder::class,
+            ResidentSeeder::class,
+            HouseSeeder::class,
             FinanceSeeder::class,
         ]);
     }
